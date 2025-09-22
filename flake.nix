@@ -70,6 +70,20 @@
             "run cargo new or similar project creation script"
           ];
         };
+        zola-nodejs = mkWelcomeText {
+          path = ./zola-nodejs;
+          name = "Zola Nodejs Template";
+          description = "A basic Zola and Nodejs Enviroment Template";
+          buildTools = [
+            "Zola"
+            "Nodejs"
+            "buildNpmPackage"
+            "importNpmLock"
+          ];
+          additionalSetupInfo = [
+            "MUST PROVIDE NPM BUILD SCRIPT"
+          ];
+        };
       };
     };
 }
