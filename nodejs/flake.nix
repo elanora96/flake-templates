@@ -8,12 +8,17 @@
       inputs.nixpkgs-lib.follows = "nixpkgs";
     };
     systems.url = "github:nix-systems/default";
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
     inputs:
     inputs.flake-parts.lib.mkFlake { inherit inputs; } {
       systems = import inputs.systems;
+      imports = [ inputs.treefmt-nix.flakeModule ];
       perSystem =
         {
           pkgs,
@@ -26,7 +31,7 @@
           src = ./.;
           buildNpmPackage = pkgs.buildNpmPackage;
           importNpmLock = pkgs.importNpmLock;
-          nodejs = pkgs.nodejs_23;
+          nodejs = pkgs.nodejs;
 
           meta = {
             description = "Nodejs Template";
@@ -67,6 +72,18 @@
             npmDeps = importNpmLock.buildNodeModules {
               npmRoot = src;
               inherit nodejs;
+            };
+          };
+
+          treefmt = {
+            projectRootFile = "flake.nix"; # Used to find the project root
+            programs = {
+              biome = {
+                enable = true;
+                # settings.files.includes = [ "" ]; # Exclude files with ! as needed
+              };
+              mdformat.enable = true;
+              nixfmt.enable = true;
             };
           };
         };
