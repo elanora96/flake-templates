@@ -44,6 +44,20 @@
     in
     {
       templates = {
+        golang = mkWelcomeText {
+          path = ./golang;
+          name = "GoLang Template";
+          description = "A basic GoLang Template";
+          buildTools = [
+            "go"
+            "gopls"
+            "gotools"
+            "buildGoModule"
+          ];
+          additionalSetupInfo = [
+            "Remember to give a real vendorHash!"
+          ];
+        };
         nodejs = mkWelcomeText {
           path = ./nodejs;
           name = "Nodejs Template";
