@@ -3,6 +3,10 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+    git-hooks-nix = {
+      url = "github:cachix/git-hooks.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
@@ -19,7 +23,10 @@
     inputs:
     inputs.flake-parts.lib.mkFlake { inherit inputs; } {
       systems = import inputs.systems;
-      imports = [ inputs.treefmt-nix.flakeModule ];
+      imports = [
+        inputs.treefmt-nix.flakeModule
+        inputs.git-hooks-nix.flakeModule
+      ];
       perSystem =
         {
           pkgs,
@@ -33,12 +40,13 @@
           src = ./.;
           npmRoot = src;
 
-          importNpmLock = pkgs.importNpmLock;
-          nodejs = pkgs.nodejs;
-          zola = pkgs.zola;
+          inherit (pkgs) importNpmLock nodejs zola;
 
           meta = {
             description = "Zola Nodejs Template";
+            longDescription = ''
+              A Nix Flake Template for Zola and Nodejs projects
+            '';
             homepage = "https://example.com";
             license = lib.licenses.mit;
             # maintainers = with lib.maintainers; [ ];
@@ -57,9 +65,9 @@
         {
           apps.default = {
             type = "app";
-
             program = "${program}";
           };
+
           packages.default = pkgs.buildNpmPackage {
             inherit
               name
@@ -71,13 +79,14 @@
               ;
 
             npmDeps = importNpmLock { inherit npmRoot; };
-            npmConfigHook = importNpmLock.npmConfigHook;
+            inherit (importNpmLock) npmConfigHook;
 
             installPhase = ''
               mkdir -p $out
               cp -r ./public $out/public
             '';
           };
+
           devShells.default = pkgs.mkShell {
             inherit buildInputs;
             name = "${name}-shell";
@@ -89,6 +98,11 @@
               inherit nodejs npmRoot;
             };
           };
+
+          pre-commit.settings.hooks = {
+            treefmt.enable = true;
+          };
+
           treefmt = {
             projectRootFile = "flake.nix"; # Used to find the project root
             programs = {

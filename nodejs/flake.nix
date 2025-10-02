@@ -3,6 +3,10 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+    git-hooks-nix = {
+      url = "github:cachix/git-hooks.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     flake-parts = {
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
@@ -18,7 +22,10 @@
     inputs:
     inputs.flake-parts.lib.mkFlake { inherit inputs; } {
       systems = import inputs.systems;
-      imports = [ inputs.treefmt-nix.flakeModule ];
+      imports = [
+        inputs.treefmt-nix.flakeModule
+        inputs.git-hooks-nix.flakeModule
+      ];
       perSystem =
         {
           pkgs,
@@ -28,10 +35,11 @@
         let
           name = "Nodejs Template";
           pname = name;
+
           src = ./.;
-          buildNpmPackage = pkgs.buildNpmPackage;
-          importNpmLock = pkgs.importNpmLock;
-          nodejs = pkgs.nodejs;
+          npmRoot = src;
+
+          inherit (pkgs) importNpmLock nodejs;
 
           meta = {
             description = "Nodejs Template";
@@ -43,18 +51,22 @@
             # maintainers = with lib.maintainers; [ ];
             platforms = lib.platforms.all;
           };
+
+          buildInputs = [ nodejs ];
         in
         {
-          packages.default = buildNpmPackage {
+          packages.default = pkgs.buildNpmPackage {
             inherit
               name
               pname
               src
               meta
+              buildInputs
               ;
-            npmDeps = importNpmLock { npmRoot = src; };
-            npmConfigHook = importNpmLock.npmConfigHook;
-            buildInputs = [ nodejs ];
+
+            npmDeps = importNpmLock { inherit npmRoot; };
+            inherit (importNpmLock) npmConfigHook;
+
             installPhase = ''
               mkdir -p $out
               cp -r ./build $out/build
@@ -62,17 +74,19 @@
           };
 
           devShells.default = pkgs.mkShell {
-            buildInputs = with pkgs; [
-              nixfmt-rfc-style
-            ];
+            inherit buildInputs;
+            name = "${name}-shell";
             packages = [
               importNpmLock.hooks.linkNodeModulesHook
               nodejs
             ];
             npmDeps = importNpmLock.buildNodeModules {
-              npmRoot = src;
-              inherit nodejs;
+              inherit nodejs npmRoot;
             };
+          };
+
+          pre-commit.settings.hooks = {
+            treefmt.enable = true;
           };
 
           treefmt = {
