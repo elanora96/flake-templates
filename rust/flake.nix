@@ -36,6 +36,7 @@
         {
           self',
           pkgs,
+          config,
           ...
         }:
         let
@@ -58,10 +59,12 @@
           packages.default = self'.packages.${name};
 
           devShells.default = pkgs.mkShell {
+            inherit (config.pre-commit) shellHook;
             name = "${name}-shell";
             inputsFrom = [
               self'.devShells.rust
             ];
+            packages = config.pre-commit.settings.enabledPackages;
           };
 
           pre-commit.settings.hooks = {

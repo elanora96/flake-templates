@@ -31,6 +31,7 @@
           self',
           pkgs,
           lib,
+          config,
           ...
         }:
         let
@@ -67,12 +68,14 @@
           };
 
           devShells.default = pkgs.mkShell {
+            inherit (config.pre-commit) shellHook;
             buildInputs = with pkgs; [
               go
               gopls
               gotools
               go-tools
             ];
+            packages = config.pre-commit.settings.enabledPackages;
           };
 
           pre-commit.settings.hooks = {
